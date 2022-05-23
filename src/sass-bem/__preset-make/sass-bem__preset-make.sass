@@ -1,0 +1,13 @@
+@function preset-make($name, $entity: null)
+
+	@if not $entity
+		$entity: $bem--current-entity
+	$entity: map-export($entity, ("block", "elem"))
+
+	$preset: (mod: $name)
+	@if type-of($name) == list
+		$preset: (mod: nth($name, 1), val: nth($name, 2))
+	$name: entity-format(map-merge($entity, $preset))
+
+	$selector: "preset#{$bem--special-separator}#{$name}"
+	@return $selector

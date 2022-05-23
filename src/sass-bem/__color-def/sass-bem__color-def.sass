@@ -1,0 +1,26 @@
+@mixin color-def($name, $color, $entity: null, $alpha: 1)
+
+	@if type-of($entity) == number
+		$alpha: $entity
+		$entity: null
+
+	$def-entity: $bem--current-entity
+	@if not $entity
+		$entity: $bem--current-base or $bem--current-entity
+
+	$name: "color#{$bem--modname-separator}#{$name}"
+	$name: var-make($name, $def-entity)
+
+	@if type-of($color) == color
+		--#{$name}-rgb: #{red($color)}, #{green($color)}, #{blue($color)}
+		--#{$name}-a: #{alpha($color)}
+
+	@if type-of($color) == string
+		$color: "color#{$bem--modname-separator}#{$color}"
+		$color: var-make($color, $entity, true)
+
+		--#{$name}-rgb: var(--#{$color}-rgb)
+		@if $alpha == 1
+			--#{$name}-a: var(--#{$color}-a)
+		@else
+			--#{$name}-a: calc(var(--#{$color}-a) * #{$alpha})

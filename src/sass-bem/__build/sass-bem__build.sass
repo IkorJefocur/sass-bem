@@ -1,0 +1,8 @@
+@mixin build($entity)
+
+	$entity: entity-parse($entity)
+	$name: entity-format($entity)
+
+	$placeholder: "%#{entity-type($entity)}#{$bem--special-separator}#{$name}"
+	*
+		@extend #{$placeholder} !optional

@@ -1,0 +1,5 @@
+@mixin var-def($name, $value)
+
+	$entity: $bem--current-entity
+	$name: var-make($name, $entity)
+	--#{$name}: #{$value}

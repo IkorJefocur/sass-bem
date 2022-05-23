@@ -1,0 +1,7 @@
+@function map-export($source, $keys)
+
+	$result: ()
+	@each $key in $keys
+		$value: ($key: map-get($source, $key))
+		$result: map-merge($result, $value)
+	@return $result

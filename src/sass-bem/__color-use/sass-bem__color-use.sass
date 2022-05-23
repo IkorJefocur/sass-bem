@@ -1,0 +1,19 @@
+@function color-use($name, $entity: null, $alpha: 1)
+
+	@if type-of($entity) == number
+		$alpha: $entity
+		$entity: null
+
+	$name: "color#{$bem--modname-separator}#{$name}"
+	$name: var-make($name, $entity, true)
+
+	@if $alpha == max
+		$alpha: 1
+	@else if $alpha == 0
+		$alpha: 0
+	@else if $alpha != 1
+		$alpha: calc(var(--#{$name}-a) * #{$alpha})
+	@else
+		$alpha: var(--#{$name}-a)
+
+	@return rgba(var(--#{$name}-rgb), #{$alpha})

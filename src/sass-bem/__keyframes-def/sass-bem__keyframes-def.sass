@@ -1,0 +1,5 @@
+@mixin keyframes-def($name)
+
+	@at-root
+		@keyframes #{keyframes($name)}
+			@content

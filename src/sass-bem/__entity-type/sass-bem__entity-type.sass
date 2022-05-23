@@ -1,0 +1,10 @@
+@function entity-type($entity)
+
+	@if map-get($entity, "mod")
+		@return "mod"
+	@if map-get($entity, "elem")
+		@return "elem"
+	@if map-get($entity, "block")
+		@return "block"
+
+	@error 'Wrong entity format: "#{$entity}"'

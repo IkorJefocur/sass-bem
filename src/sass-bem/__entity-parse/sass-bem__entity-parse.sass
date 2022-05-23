@@ -1,0 +1,61 @@
+@function entity-parse($entity, $expect: ("block", "elem", "mod", "val"))
+
+	$type: type-of($entity)
+	@if $type != string and $type != list and $type != map
+		@error 'Wrong entity format: "#{$entity}"'
+
+	$block: null
+	$elem: null
+	$mod: null
+	$val: null
+
+	@if $type == string
+		$block: $entity
+
+	@if $type == list
+		$block: nth($entity, 1)
+
+		@if length($entity) == 2
+			@if type-of(nth($entity, 1)) == list or type-of(nth($entity, 2)) == list
+				$mod: nth($entity, 2)
+			@else
+				$elem: nth($entity, 2)
+
+		@if length($entity) == 3
+			@if type-of(nth($entity, 1)) == list
+				$mod: nth($entity, 2)
+				$val: nth($entity, 3)
+			@else
+				$elem: nth($entity, 2)
+				$mod: nth($entity, 3)
+
+		@if length($entity) == 4
+			$elem: nth($entity, 2)
+			$mod: nth($entity, 3)
+			$val: nth($entity, 4)
+
+	@if $type == map
+		$block: map-get($entity, "block") or map-get($entity, "b")
+		$elem: map-get($entity, "element") or map-get($entity, "elem") or map-get($entity, "e")
+		$mod: map-get($entity, "modifier") or map-get($entity, "mod") or map-get($entity, "m")
+		$val: map-get($entity, "value") or map-get($entity, "val") or map-get($entity, "v")
+
+	@if type-of($block) == list
+		@if not $elem and length($block) > 1
+			$elem: nth($block, 2)
+		$block: nth($block, 1)
+	@if type-of($mod) == list
+		@if not $val and length($mod) > 1
+			$val: nth($mod, 2)
+		$mod: nth($mod, 1)
+
+	$result: ()
+	@if index($expect, "block") and $block
+		$result: map-merge($result, (block: $block))
+	@if index($expect, "elem") and $elem
+		$result: map-merge($result, (elem: $elem))
+	@if index($expect, "mod") and $mod
+		$result: map-merge($result, (mod: $mod))
+	@if index($expect, "val") and $val
+		$result: map-merge($result, (val: $val))
+	@return $result

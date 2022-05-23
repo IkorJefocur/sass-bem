@@ -1,0 +1,9 @@
+@mixin base($entity)
+
+	$entity: entity-parse($entity)
+
+	$bem--current-base: $entity !global
+	@include context($entity)
+		@include nest
+			@content
+	$bem--current-base: null !global

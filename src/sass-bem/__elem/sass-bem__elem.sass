@@ -1,0 +1,38 @@
+@mixin elem($names...)
+
+	$entity: $bem--current-entity
+	$nest: $bem--current-nest
+	@if not $entity
+		@error 'Block for elem(s) not found: "#{$names}"'
+
+	$join-selector: not $nest and entity-type($entity) == "block"
+	$base: (block: map-get($entity, "block"))
+	$selector: join((), (), comma)
+
+	@each $name in $names
+
+		$elem: (elem: $name)
+		$name: entity-format(map-merge($base, $elem))
+		$next-selector: "%#{entity-type($elem)}#{$bem--special-separator}#{$name}"
+
+		@if $join-selector
+			$next-selector: "#{$next-selector}#{&}#{entity-format($elem)}"
+		@else
+			$next-selector: "#{$next-selector}.#{$name}"
+		$selector: append($selector, $next-selector)
+
+	$elem: (elems: $names)
+	@if length($names) == 1
+		$elem: (elem: nth($names, 1))
+
+	$bem--current-entity: map-merge($entity, $elem) !global
+	$bem--current-nest: false !global
+	@if $join-selector
+		@at-root
+			#{$selector}
+				@content
+	@else
+		#{$selector}
+			@content
+	$bem--current-nest: $nest !global
+	$bem--current-entity: $entity !global

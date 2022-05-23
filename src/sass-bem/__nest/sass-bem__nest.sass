@@ -1,0 +1,8 @@
+@mixin nest
+
+	@if not $bem--current-nest
+		$bem--current-nest: true !global
+		@content
+		$bem--current-nest: false !global
+	@else
+		@content

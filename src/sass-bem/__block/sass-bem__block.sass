@@ -1,0 +1,22 @@
+@mixin block($name, $abstract: false)
+
+	$block: (block: $name)
+	$selector: "%#{entity-type($block)}#{$bem--special-separator}#{$name}"
+
+	@if not $abstract
+		$selector: "#{$selector}.#{$name}"
+
+	$entity: $bem--current-entity
+	$nest: $bem--current-nest
+	@if $entity
+		$selector: "&#{$selector}"
+
+	$bem--current-entity: $block !global
+	$bem--current-nest: false !global
+	@if index($bem--abstract-blocks, $name)
+		@content
+	@else
+		#{$selector}
+			@content
+	$bem--current-nest: $nest !global
+	$bem--current-entity: $entity !global

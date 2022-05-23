@@ -1,0 +1,37 @@
+@mixin preset-def($names...)
+
+	$entity: $bem--current-entity
+	@if not $entity
+		@error 'Entity for preset(s) not found: "#{$names}'
+	@if map-get($entity, "elems") or map-get($entity, "mods")
+		@error 'Preset(s) defined for multiple entities: "#{$names}"'
+
+	$base: map-export($entity, ("block", "elem"))
+	$mod-data: map-export($entity, ("mod", "val"))
+
+	$selector: join((), (), comma)
+	@each $name in $names
+		$preset: "%#{preset-make($name, $entity)}"
+		@if map-get($entity, "preset")
+			$preset: "&#{$preset}"
+		$selector: append($selector, $preset)
+
+	$preset: (preset: $names)
+	$mod: null
+	@if map-get($entity, "mod")
+		$mod: (map-get($mod-data, "mod"), map-get($mod-data, "val"))
+
+	$bem--current-entity: map-merge($base, $preset) !global
+	@include nest
+		@if map-get($entity, "preset")
+			#{$selector}
+				@content
+		@else
+			@at-root
+				#{$selector}
+					@if $mod
+						@include mod($mod)
+							@content
+					@else
+						@content
+	$bem--current-entity: $entity !global

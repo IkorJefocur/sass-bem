@@ -1,0 +1,21 @@
+@function reverse($input, $recursive: false)
+	$result: ()
+
+	// Список
+	@if type-of($input) == list
+		@for $i from length($input) through 1
+			@if index(list map, type-of(nth($input, $i))) and $recursive
+				$result: append($result, reverse(nth($input, $i), $recursive))
+			@else
+				$result: append($result, nth($input, $i))
+
+	// Карта
+	@if type-of($input) == map
+		$keys: map-keys($input)
+		@for $i from length($keys) through 1
+			@if index(list map, type-of(map-get($input, nth($keys, $i)))) and $recursive
+				$result: append($result, reverse(map-get($input, nth($keys, $i)), $recursive))
+			@else
+				$result: map-merge($result, (nth($keys, $i): map-get($input, nth($keys, $i))))
+
+	@return $result

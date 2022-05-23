@@ -1,0 +1,8 @@
+@function keyframes($name, $entity: null)
+
+	@if not $entity
+		$entity: $bem--current-base or $bem--current-entity
+	$entity: entity-parse($entity)
+
+	$name: "#{entity-format($entity)}#{$bem--modname-separator}#{$name}"
+	@return $name

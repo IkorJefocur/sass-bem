@@ -1,0 +1,19 @@
+{
+  "name": "sass-bem",
+  "version": "0.1.0",
+  "description": "Sass library for BEM methodology",
+  "directories": {
+    "doc": "docs"
+  },
+  "author": "Ikor Jefocur",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/eslint-parser": "^7.17.0",
+    "eslint": "^8.16.0",
+    "gulp": "^4.0.2",
+    "gulp-bem-src": "^0.1.3",
+    "gulp-concat": "^2.6.1",
+    "gulp-sass": "^5.1.0",
+    "sass": "^1.52.1"
+  }
+}

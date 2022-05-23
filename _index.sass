@@ -1,0 +1,468 @@
+$bem--global-block: "g"
+$bem--abstract-blocks: ("g", "js")
+
+$bem--elem-separator: "__"
+$bem--modname-separator: "_"
+$bem--modval-separator: "_"
+$bem--special-separator: "--"
+$bem--skip-symbol: "_"
+$bem--current-entity: null
+$bem--current-base: null
+$bem--current-nest: false
+@function entity-parse($entity, $expect: ("block", "elem", "mod", "val"))
+
+	$type: type-of($entity)
+	@if $type != string and $type != list and $type != map
+		@error 'Wrong entity format: "#{$entity}"'
+
+	$block: null
+	$elem: null
+	$mod: null
+	$val: null
+
+	@if $type == string
+		$block: $entity
+
+	@if $type == list
+		$block: nth($entity, 1)
+
+		@if length($entity) == 2
+			@if type-of(nth($entity, 1)) == list or type-of(nth($entity, 2)) == list
+				$mod: nth($entity, 2)
+			@else
+				$elem: nth($entity, 2)
+
+		@if length($entity) == 3
+			@if type-of(nth($entity, 1)) == list
+				$mod: nth($entity, 2)
+				$val: nth($entity, 3)
+			@else
+				$elem: nth($entity, 2)
+				$mod: nth($entity, 3)
+
+		@if length($entity) == 4
+			$elem: nth($entity, 2)
+			$mod: nth($entity, 3)
+			$val: nth($entity, 4)
+
+	@if $type == map
+		$block: map-get($entity, "block") or map-get($entity, "b")
+		$elem: map-get($entity, "element") or map-get($entity, "elem") or map-get($entity, "e")
+		$mod: map-get($entity, "modifier") or map-get($entity, "mod") or map-get($entity, "m")
+		$val: map-get($entity, "value") or map-get($entity, "val") or map-get($entity, "v")
+
+	@if type-of($block) == list
+		@if not $elem and length($block) > 1
+			$elem: nth($block, 2)
+		$block: nth($block, 1)
+	@if type-of($mod) == list
+		@if not $val and length($mod) > 1
+			$val: nth($mod, 2)
+		$mod: nth($mod, 1)
+
+	$result: ()
+	@if index($expect, "block") and $block
+		$result: map-merge($result, (block: $block))
+	@if index($expect, "elem") and $elem
+		$result: map-merge($result, (elem: $elem))
+	@if index($expect, "mod") and $mod
+		$result: map-merge($result, (mod: $mod))
+	@if index($expect, "val") and $val
+		$result: map-merge($result, (val: $val))
+	@return $result
+@function defaults($source, $defaults, $skipper: null)
+
+	@if length($source) == 0 or length($defaults) == 0
+		@return $source
+
+	@if type-of($source) != type-of($defaults)
+		@error 'Type of source doesn\'t match type of default values'
+
+	@if type-of($source) == list and length($source) > 0
+		$result: ()
+		@for $index from 1 through length($source)
+			@if nth($source, $index) == $skipper
+				$result: append($result, nth($defaults, $index))
+			@else
+				$result: append($result, nth($source, $index))
+		$source: $result
+
+	@if type-of($source) == map
+		@each $key, $value in $source
+			@if $value == $skipper
+				$source: map-merge($source, ($key: map-get($defaults, $key)))
+
+	@return $source
+@function entity-normalize($entity: null, $defaults: null)
+
+	@if not $defaults
+		$defaults: $bem--current-entity
+
+	@if not $entity
+		@return $defaults
+
+	$entity: defaults($entity, $defaults or (), $bem--skip-symbol)
+
+	@if not map-get($entity, "block") and not map-get($entity, "elem")
+		$elem: (elem: map-get($defaults, "elem"))
+		$entity: map-merge($entity, $elem)
+
+	@if not map-get($entity, "block")
+		$block: (block: map-get($defaults, "block"))
+		$entity: map-merge($entity, $block)
+
+	@return $entity
+@function entity-format($entity)
+
+	$block: map-get($entity, "block")
+	$elem: map-get($entity, "elem")
+	$mod: map-get($entity, "mod")
+	$val: map-get($entity, "val")
+
+	$result: ""
+	@if $block
+		$result: $block
+	@if $elem
+		$result: "#{$result}#{$bem--elem-separator}#{$elem}"
+	@if $mod
+		$result: "#{$result}#{$bem--modname-separator}#{$mod}"
+		@if $val
+			$result: "#{$result}#{$bem--modval-separator}#{$val}"
+	@return $result
+@function entity-type($entity)
+
+	@if map-get($entity, "mod")
+		@return "mod"
+	@if map-get($entity, "elem")
+		@return "elem"
+	@if map-get($entity, "block")
+		@return "block"
+
+	@error 'Wrong entity format: "#{$entity}"'
+@mixin nest
+
+	@if not $bem--current-nest
+		$bem--current-nest: true !global
+		@content
+		$bem--current-nest: false !global
+	@else
+		@content
+@mixin block($name, $abstract: false)
+
+	$block: (block: $name)
+	$selector: "%#{entity-type($block)}#{$bem--special-separator}#{$name}"
+
+	@if not $abstract
+		$selector: "#{$selector}.#{$name}"
+
+	$entity: $bem--current-entity
+	$nest: $bem--current-nest
+	@if $entity
+		$selector: "&#{$selector}"
+
+	$bem--current-entity: $block !global
+	$bem--current-nest: false !global
+	@if index($bem--abstract-blocks, $name)
+		@content
+	@else
+		#{$selector}
+			@content
+	$bem--current-nest: $nest !global
+	$bem--current-entity: $entity !global
+@mixin elem($names...)
+
+	$entity: $bem--current-entity
+	$nest: $bem--current-nest
+	@if not $entity
+		@error 'Block for elem(s) not found: "#{$names}"'
+
+	$join-selector: not $nest and entity-type($entity) == "block"
+	$base: (block: map-get($entity, "block"))
+	$selector: join((), (), comma)
+
+	@each $name in $names
+
+		$elem: (elem: $name)
+		$name: entity-format(map-merge($base, $elem))
+		$next-selector: "%#{entity-type($elem)}#{$bem--special-separator}#{$name}"
+
+		@if $join-selector
+			$next-selector: "#{$next-selector}#{&}#{entity-format($elem)}"
+		@else
+			$next-selector: "#{$next-selector}.#{$name}"
+		$selector: append($selector, $next-selector)
+
+	$elem: (elems: $names)
+	@if length($names) == 1
+		$elem: (elem: nth($names, 1))
+
+	$bem--current-entity: map-merge($entity, $elem) !global
+	$bem--current-nest: false !global
+	@if $join-selector
+		@at-root
+			#{$selector}
+				@content
+	@else
+		#{$selector}
+			@content
+	$bem--current-nest: $nest !global
+	$bem--current-entity: $entity !global
+@mixin mod($names...)
+
+	$entity: $bem--current-entity
+	$nest: $bem--current-nest
+	@if not $entity
+		@error 'Base (block or elem) for modifier(s) not found: "#{$names}"'
+	@if map-get($entity, "elems")
+		@error 'Modifier(s) defined for multiple elems: #{$names}'
+
+	$join-selector: not $nest and entity-type($entity) != "mod"
+	$base: (block: map-get($entity, "block"), elem: map-get($entity, "elem"))
+	$selector: join((), (), comma)
+
+	@each $name in $names
+
+		$mod: (mod: $name)
+		@if type-of($name) == list
+			$mod: (mod: nth($name, 1), val: nth($name, 2))
+		$name: entity-format(map-merge($base, $mod))
+		$next-selector: "%#{entity-type($mod)}#{$bem--special-separator}#{$name}"
+
+		@if $join-selector
+			$next-selector: "#{$next-selector}#{&}#{entity-format($mod)}"
+		@else
+			$next-selector: "&#{$next-selector}.#{$name}"
+		$selector: append($selector, $next-selector)
+
+	$mod: (mods: $names)
+	@if length($names) == 1
+		@if type-of(nth($names, 1)) == list
+			$mod: (mod: nth(nth($names, 1), 1), val: nth(nth($names, 1), 2))
+		@else
+			$mod: (mod: nth($names, 1))
+
+	$bem--current-entity: map-merge($entity, $mod) !global
+	$bem--current-nest: false !global
+	@at-root
+		#{$selector}
+			@content
+	$bem--current-nest: $nest !global
+	$bem--current-entity: $entity !global
+@mixin context($entity)
+
+	$entity: entity-parse($entity)
+	$target: defaults($entity, (), $bem--skip-symbol)
+
+	@if map-get($target, "block")
+		@include block(map-get($target, "block"))
+
+			@if map-get($target, "elem")
+				@include elem(map-get($target, "elem"))
+
+					@if map-get($target, "mod")
+						@include mod((map-get($target, "mod"), map-get($target, "val")))
+							@content
+
+					@else
+						@content
+
+			@else if map-get($target, "mod")
+				@include mod((map-get($target, "mod"), map-get($target, "val")))
+					@content
+
+			@else
+				@content
+
+	@else
+
+		@if map-get($target, "elem")
+			@include elem(map-get($target, "elem"))
+
+				@if map-get($target, "mod")
+					@include mod((map-get($target, "mod"), map-get($target, "val")))
+						@content
+
+				@else
+					@content
+
+		@else if map-get($target, "mod")
+			@include mod((map-get($target, "mod"), map-get($target, "val")))
+				@content
+
+		@else
+			@content
+@mixin base($entity)
+
+	$entity: entity-parse($entity)
+
+	$bem--current-base: $entity !global
+	@include context($entity)
+		@include nest
+			@content
+	$bem--current-base: null !global
+@mixin build($entity)
+
+	$entity: entity-parse($entity)
+	$name: entity-format($entity)
+
+	$placeholder: "%#{entity-type($entity)}#{$bem--special-separator}#{$name}"
+	*
+		@extend #{$placeholder} !optional
+@function map-export($source, $keys)
+
+	$result: ()
+	@each $key in $keys
+		$value: ($key: map-get($source, $key))
+		$result: map-merge($result, $value)
+	@return $result
+@function preset-make($name, $entity: null)
+
+	@if not $entity
+		$entity: $bem--current-entity
+	$entity: map-export($entity, ("block", "elem"))
+
+	$preset: (mod: $name)
+	@if type-of($name) == list
+		$preset: (mod: nth($name, 1), val: nth($name, 2))
+	$name: entity-format(map-merge($entity, $preset))
+
+	$selector: "preset#{$bem--special-separator}#{$name}"
+	@return $selector
+@mixin preset-def($names...)
+
+	$entity: $bem--current-entity
+	@if not $entity
+		@error 'Entity for preset(s) not found: "#{$names}'
+	@if map-get($entity, "elems") or map-get($entity, "mods")
+		@error 'Preset(s) defined for multiple entities: "#{$names}"'
+
+	$base: map-export($entity, ("block", "elem"))
+	$mod-data: map-export($entity, ("mod", "val"))
+
+	$selector: join((), (), comma)
+	@each $name in $names
+		$preset: "%#{preset-make($name, $entity)}"
+		@if map-get($entity, "preset")
+			$preset: "&#{$preset}"
+		$selector: append($selector, $preset)
+
+	$preset: (preset: $names)
+	$mod: null
+	@if map-get($entity, "mod")
+		$mod: (map-get($mod-data, "mod"), map-get($mod-data, "val"))
+
+	$bem--current-entity: map-merge($base, $preset) !global
+	@include nest
+		@if map-get($entity, "preset")
+			#{$selector}
+				@content
+		@else
+			@at-root
+				#{$selector}
+					@if $mod
+						@include mod($mod)
+							@content
+					@else
+						@content
+	$bem--current-entity: $entity !global
+@mixin preset($name, $entity: null)
+
+	@if not $entity
+		$entity: $bem--current-entity
+	$entity: entity-parse($entity, ("block", "elem"))
+	$entity: entity-normalize($entity)
+
+	@if not map-get($entity, "block")
+		@error "No base specified for preset: #{$name}"
+
+	$selector: "%#{preset-make($name, $entity)}"
+	@extend #{$selector} !optional
+@function var-make($name, $entity: null, $use-base: false)
+
+	$defaults: $bem--current-entity
+	@if $use-base
+		$defaults: $bem--current-base
+
+	@if type-of($name) == number
+		$name: "#{$name}"
+
+	@if not $entity
+		$entity: $defaults or $bem--global-block
+	$entity: entity-parse($entity, ("block", "elem"))
+	$entity: entity-normalize($entity, $defaults)
+
+	@if not map-get($entity, "block")
+		@error "No base specified for variable: #{$name}"
+
+	$entity-name: entity-format($entity)
+	$full-name: "#{$entity-name}#{$bem--modname-separator}#{$name}"
+	@return $full-name
+@function var-use($name, $entity: null, $default: null)
+
+	$result: var-make($name, $entity, true)
+	@if $default
+		$result: "#{$result},#{$default}"
+	@return var(--#{$result})
+@mixin var-def($name, $value)
+
+	$entity: $bem--current-entity
+	$name: var-make($name, $entity)
+	--#{$name}: #{$value}
+@function color-use($name, $entity: null, $alpha: 1)
+
+	@if type-of($entity) == number
+		$alpha: $entity
+		$entity: null
+
+	$name: "color#{$bem--modname-separator}#{$name}"
+	$name: var-make($name, $entity, true)
+
+	@if $alpha == max
+		$alpha: 1
+	@else if $alpha == 0
+		$alpha: 0
+	@else if $alpha != 1
+		$alpha: calc(var(--#{$name}-a) * #{$alpha})
+	@else
+		$alpha: var(--#{$name}-a)
+
+	@return rgba(var(--#{$name}-rgb), #{$alpha})
+@mixin color-def($name, $color, $entity: null, $alpha: 1)
+
+	@if type-of($entity) == number
+		$alpha: $entity
+		$entity: null
+
+	$def-entity: $bem--current-entity
+	@if not $entity
+		$entity: $bem--current-base or $bem--current-entity
+
+	$name: "color#{$bem--modname-separator}#{$name}"
+	$name: var-make($name, $def-entity)
+
+	@if type-of($color) == color
+		--#{$name}-rgb: #{red($color)}, #{green($color)}, #{blue($color)}
+		--#{$name}-a: #{alpha($color)}
+
+	@if type-of($color) == string
+		$color: "color#{$bem--modname-separator}#{$color}"
+		$color: var-make($color, $entity, true)
+
+		--#{$name}-rgb: var(--#{$color}-rgb)
+		@if $alpha == 1
+			--#{$name}-a: var(--#{$color}-a)
+		@else
+			--#{$name}-a: calc(var(--#{$color}-a) * #{$alpha})
+@function keyframes($name, $entity: null)
+
+	@if not $entity
+		$entity: $bem--current-base or $bem--current-entity
+	$entity: entity-parse($entity)
+
+	$name: "#{entity-format($entity)}#{$bem--modname-separator}#{$name}"
+	@return $name
+@mixin keyframes-def($name)
+
+	@at-root
+		@keyframes #{keyframes($name)}
+			@content

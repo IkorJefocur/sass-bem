@@ -1,0 +1,43 @@
+@mixin context($entity)
+
+	$entity: entity-parse($entity)
+	$target: defaults($entity, (), $bem--skip-symbol)
+
+	@if map-get($target, "block")
+		@include block(map-get($target, "block"))
+
+			@if map-get($target, "elem")
+				@include elem(map-get($target, "elem"))
+
+					@if map-get($target, "mod")
+						@include mod((map-get($target, "mod"), map-get($target, "val")))
+							@content
+
+					@else
+						@content
+
+			@else if map-get($target, "mod")
+				@include mod((map-get($target, "mod"), map-get($target, "val")))
+					@content
+
+			@else
+				@content
+
+	@else
+
+		@if map-get($target, "elem")
+			@include elem(map-get($target, "elem"))
+
+				@if map-get($target, "mod")
+					@include mod((map-get($target, "mod"), map-get($target, "val")))
+						@content
+
+				@else
+					@content
+
+		@else if map-get($target, "mod")
+			@include mod((map-get($target, "mod"), map-get($target, "val")))
+				@content
+
+		@else
+			@content

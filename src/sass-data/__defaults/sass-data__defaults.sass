@@ -1,0 +1,23 @@
+@function defaults($source, $defaults, $skipper: null)
+
+	@if length($source) == 0 or length($defaults) == 0
+		@return $source
+
+	@if type-of($source) != type-of($defaults)
+		@error 'Type of source doesn\'t match type of default values'
+
+	@if type-of($source) == list and length($source) > 0
+		$result: ()
+		@for $index from 1 through length($source)
+			@if nth($source, $index) == $skipper
+				$result: append($result, nth($defaults, $index))
+			@else
+				$result: append($result, nth($source, $index))
+		$source: $result
+
+	@if type-of($source) == map
+		@each $key, $value in $source
+			@if $value == $skipper
+				$source: map-merge($source, ($key: map-get($defaults, $key)))
+
+	@return $source

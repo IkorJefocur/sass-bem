@@ -1,0 +1,20 @@
+@function var-make($name, $entity: null, $use-base: false)
+
+	$defaults: $bem--current-entity
+	@if $use-base
+		$defaults: $bem--current-base
+
+	@if type-of($name) == number
+		$name: "#{$name}"
+
+	@if not $entity
+		$entity: $defaults or $bem--global-block
+	$entity: entity-parse($entity, ("block", "elem"))
+	$entity: entity-normalize($entity, $defaults)
+
+	@if not map-get($entity, "block")
+		@error "No base specified for variable: #{$name}"
+
+	$entity-name: entity-format($entity)
+	$full-name: "#{$entity-name}#{$bem--modname-separator}#{$name}"
+	@return $full-name

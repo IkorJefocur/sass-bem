@@ -1,0 +1,12 @@
+@function str-split($input, $separator: ",")
+	$split-arr: ()
+	$index: str-index($input, $separator)
+
+	@while $index != null
+		$item: str-slice($input, 1, $index - 1)
+		$split-arr: append($split-arr, $item)
+		$input: str-slice($input, $index + 1)
+		$index: str-index($input, $separator)
+
+	$split-arr: append($split-arr, $input)
+	@return $split-arr

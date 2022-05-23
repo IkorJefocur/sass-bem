@@ -1,0 +1,41 @@
+@mixin mod($names...)
+
+	$entity: $bem--current-entity
+	$nest: $bem--current-nest
+	@if not $entity
+		@error 'Base (block or elem) for modifier(s) not found: "#{$names}"'
+	@if map-get($entity, "elems")
+		@error 'Modifier(s) defined for multiple elems: #{$names}'
+
+	$join-selector: not $nest and entity-type($entity) != "mod"
+	$base: (block: map-get($entity, "block"), elem: map-get($entity, "elem"))
+	$selector: join((), (), comma)
+
+	@each $name in $names
+
+		$mod: (mod: $name)
+		@if type-of($name) == list
+			$mod: (mod: nth($name, 1), val: nth($name, 2))
+		$name: entity-format(map-merge($base, $mod))
+		$next-selector: "%#{entity-type($mod)}#{$bem--special-separator}#{$name}"
+
+		@if $join-selector
+			$next-selector: "#{$next-selector}#{&}#{entity-format($mod)}"
+		@else
+			$next-selector: "&#{$next-selector}.#{$name}"
+		$selector: append($selector, $next-selector)
+
+	$mod: (mods: $names)
+	@if length($names) == 1
+		@if type-of(nth($names, 1)) == list
+			$mod: (mod: nth(nth($names, 1), 1), val: nth(nth($names, 1), 2))
+		@else
+			$mod: (mod: nth($names, 1))
+
+	$bem--current-entity: map-merge($entity, $mod) !global
+	$bem--current-nest: false !global
+	@at-root
+		#{$selector}
+			@content
+	$bem--current-nest: $nest !global
+	$bem--current-entity: $entity !global

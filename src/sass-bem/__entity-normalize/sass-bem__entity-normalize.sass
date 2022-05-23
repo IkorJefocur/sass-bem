@@ -1,0 +1,19 @@
+@function entity-normalize($entity: null, $defaults: null)
+
+	@if not $defaults
+		$defaults: $bem--current-entity
+
+	@if not $entity
+		@return $defaults
+
+	$entity: defaults($entity, $defaults or (), $bem--skip-symbol)
+
+	@if not map-get($entity, "block") and not map-get($entity, "elem")
+		$elem: (elem: map-get($defaults, "elem"))
+		$entity: map-merge($entity, $elem)
+
+	@if not map-get($entity, "block")
+		$block: (block: map-get($defaults, "block"))
+		$entity: map-merge($entity, $block)
+
+	@return $entity

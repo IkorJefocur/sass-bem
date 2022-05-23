@@ -1,0 +1,6 @@
+@function var-use($name, $entity: null, $default: null)
+
+	$result: var-make($name, $entity, true)
+	@if $default
+		$result: "#{$result},#{$default}"
+	@return var(--#{$result})

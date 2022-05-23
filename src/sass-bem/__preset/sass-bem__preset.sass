@@ -1,0 +1,12 @@
+@mixin preset($name, $entity: null)
+
+	@if not $entity
+		$entity: $bem--current-entity
+	$entity: entity-parse($entity, ("block", "elem"))
+	$entity: entity-normalize($entity)
+
+	@if not map-get($entity, "block")
+		@error "No base specified for preset: #{$name}"
+
+	$selector: "%#{preset-make($name, $entity)}"
+	@extend #{$selector} !optional

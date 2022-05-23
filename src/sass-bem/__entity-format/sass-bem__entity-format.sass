@@ -1,0 +1,17 @@
+@function entity-format($entity)
+
+	$block: map-get($entity, "block")
+	$elem: map-get($entity, "elem")
+	$mod: map-get($entity, "mod")
+	$val: map-get($entity, "val")
+
+	$result: ""
+	@if $block
+		$result: $block
+	@if $elem
+		$result: "#{$result}#{$bem--elem-separator}#{$elem}"
+	@if $mod
+		$result: "#{$result}#{$bem--modname-separator}#{$mod}"
+		@if $val
+			$result: "#{$result}#{$bem--modval-separator}#{$val}"
+	@return $result

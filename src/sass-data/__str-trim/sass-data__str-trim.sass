@@ -1,0 +1,8 @@
+@function str-trim($input)
+	@while (str-index($input, " ") == 1)
+		$input: str-slice($input, 2)
+
+	@while (str-index($input, " ") == length($input))
+		$input: str-slice($input, 1, -2)
+
+	@return $input
